@@ -258,7 +258,7 @@ for subdir, dirs, files in os.walk(rootdir):
                 production_scores.append(float(model.spa)/float(model.prod_attempts))
                     
             #Print out the model's average score on the production task
-            print textfile, str(sum(production_scores) / float(len(production_scores)))
+            print(textfile, str(sum(production_scores) / float(len(production_scores))))
 
             #output record of the on-line shallow parses to a new file for scoring
             #against gold-standard shallow parses
