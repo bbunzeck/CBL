@@ -1,4 +1,8 @@
 # CBL
+## Updated CBL
+This repo builds on the CBL by McCauley and Christiansen (see below).
+
+## Old Readme
 Code for CBL 1.0
 
 The model is described in detail in: McCauley, S.M. & Christiansen, M.H. (in press). Language learning as language use: A cross-linguistic model of child language development. Psychological Review.
@@ -13,6 +17,3 @@ The folder "Sample Corpora" includes detailed instructions for corpus preparatio
 
 The same folder includes instructions for creating the "gold standard" shallow parse used to evaluate the model's shallow parsing performance, 
 along with an example of a gold standard file. 
-
-Please do not share or distribute prior to the publication of the work presented in this paper. Thanks!
-
