@@ -1,9 +1,14 @@
+# Updated CBL model
+# ----------------------------------
+# Original implementation from McCauley, S.M. & Christiansen, M.H. (2019). Language learning as language use: A cross-linguistic model of child language development. Psych Review.
+
 import random
 import os
 
 class MeanDict(dict):
     """Dictionary designed to allow easy calculation
-    of the running average of its values."""
+    of the running average of its values.
+    Is instantiated as TPRunAvg in CBL_Model class below"""
     def __init__(self):
         self._total = 0.0
         self._count = 0
