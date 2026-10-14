@@ -1,6 +1,6 @@
 # CBL
 ## Updated CBL
-This repo builds on the CBL by McCauley and Christiansen (see below).
+This repo builds on the original CBL by McCauley and Christiansen (see below) and currently implements the frame detection logic from their [2019 CogSci paper](https://escholarship.org/uc/item/644529zb) in addition to the original CBL.
 
 ## Old Readme
 Code for CBL 1.0
