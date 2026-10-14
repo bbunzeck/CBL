@@ -45,6 +45,9 @@ class CBL_Model:
         self.prod_attempts = 0
         self.ChunkWordPairs = {}
         self.shallow_parses = []
+        # additional dicts for frame detection
+        self.SlotChunks = {}
+        self.Frames = {}
 
     def add_unigram(self, word):
         """Updates low-level frequency info for unigrams."""
@@ -75,6 +78,31 @@ class CBL_Model:
         else:
             self.BiChunks[chunk1, chunk2] = 1
 
+    def add_slotchunks(self, chunk):
+        """For every (at least bigram) chunk,
+        variants with every word replaced by the slot marker "_"
+        are saved to the SlotChunks dict and counted"""
+        if len(chunk.split()) > 1: # can also be changed if you just want larger frames
+            SlotChunkCandidates = []
+            for i in range(len(chunk.split())):
+                ChunkWords = chunk.split()
+                ChunkWords[i] = '_'
+                SlotChunkCandidates.append(' '.join(ChunkWords))
+            for candidate in SlotChunkCandidates:
+                if candidate in self.SlotChunks:
+                    self.SlotChunks[candidate] = self.SlotChunks[candidate] + 1
+                else:
+                    self.SlotChunks[candidate] = 1
+
+    def update_frames(self):
+        """Updates the frame inventory"""
+        for SlotChunk in self.SlotChunks:
+            if self.SlotChunks[SlotChunk] > 4: # frame criterion here
+                if SlotChunk in self.Frames:
+                    self.Frames[SlotChunk] = self.Frames[SlotChunk] + 1
+                else:
+                    self.Frames[SlotChunk] = 1
+    
     def add_chunkWordPair(self, w1, w2):
         """Updates frequency info for adjacent words occurring as part
         (or all) of a chunk, supporting discovery of new chunks."""
@@ -95,6 +123,10 @@ class CBL_Model:
 
         if (len(chunks) > 1):
             self.add_bichunk(chunks[-2],chunks[-1])
+
+        for chunk in chunks:
+            self.add_slotchunks(chunk)
+        
     
     def calc_btp_chunks(self, chunk1, chunk2):
         """Calculates the TP between two chunks."""
@@ -226,6 +258,8 @@ class CBL_Model:
         #end of utterance has been encountered, so the final
         #chunk can now be updated online
         self.update_chunks(shal_pars)
+
+        self.update_frames()
         
         #house-keeping operation
         self.end_of_utterance(shal_pars)
