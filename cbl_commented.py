@@ -33,7 +33,7 @@ class MeanDict(dict):
 
 class CBL_Model:
     """Chunk-based Learner (CBL) model. McCauley &
-    Christiansen (2011, 2014, in press)"""
+    Christiansen (2011, 2014, 2019)"""
     def __init__(self):
         self.avg_tp = 0
         self.Unigrams = {}
@@ -78,31 +78,29 @@ class CBL_Model:
         else:
             self.BiChunks[chunk1, chunk2] = 1
 
-    def add_slotchunks(self, chunk):
+    def add_slotchunks_frames(self, chunk):
         """For every (at least bigram) chunk,
         variants with every word replaced by the slot marker "_"
-        are saved to the SlotChunks dict and counted"""
+        are saved to the SlotChunks dict and their fillers
+        are saved and used as a counter of frame fillers"""
         if len(chunk.split()) > 1: # can also be changed if you just want larger frames
-            SlotChunkCandidates = []
             for i in range(len(chunk.split())):
                 ChunkWords = chunk.split()
+                MaskedWord = ChunkWords[i] 
                 ChunkWords[i] = '_'
-                SlotChunkCandidates.append(' '.join(ChunkWords))
-            for candidate in SlotChunkCandidates:
-                if candidate in self.SlotChunks:
-                    self.SlotChunks[candidate] = self.SlotChunks[candidate] + 1
+                ChunkWithSlot = ' '.join(ChunkWords)
+                if ChunkWithSlot in self.SlotChunks:
+                    self.SlotChunks[ChunkWithSlot].add(MaskedWord)
+                 
                 else:
-                    self.SlotChunks[candidate] = 1
+                    self.SlotChunks[ChunkWithSlot] = set([MaskedWord])
 
-    def update_frames(self):
-        """Updates the frame inventory"""
-        for SlotChunk in self.SlotChunks:
-            if self.SlotChunks[SlotChunk] > 4: # frame criterion here
-                if SlotChunk in self.Frames:
-                    self.Frames[SlotChunk] = self.Frames[SlotChunk] + 1
-                else:
-                    self.Frames[SlotChunk] = 1
-    
+                if len(self.SlotChunks[ChunkWithSlot]) > 2:
+                    if ChunkWithSlot in self.Frames:
+                        self.Frames[ChunkWithSlot] = self.Frames[ChunkWithSlot] + 1
+                    else:
+                        self.Frames[ChunkWithSlot] = 1    
+                    
     def add_chunkWordPair(self, w1, w2):
         """Updates frequency info for adjacent words occurring as part
         (or all) of a chunk, supporting discovery of new chunks."""
@@ -124,8 +122,7 @@ class CBL_Model:
         if (len(chunks) > 1):
             self.add_bichunk(chunks[-2],chunks[-1])
 
-        for chunk in chunks:
-            self.add_slotchunks(chunk)
+        self.add_slotchunks_frames(chunks[-1])
         
     
     def calc_btp_chunks(self, chunk1, chunk2):
@@ -258,8 +255,6 @@ class CBL_Model:
         #end of utterance has been encountered, so the final
         #chunk can now be updated online
         self.update_chunks(shal_pars)
-
-        self.update_frames()
         
         #house-keeping operation
         self.end_of_utterance(shal_pars)
