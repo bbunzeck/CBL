@@ -1,5 +1,5 @@
 # Updated CBL
-This repo builds on the original CBL by McCauley and Christiansen (2019) and additionally implements the frame detection logic from their [2019 CogSci paper](https://escholarship.org/uc/item/644529zb).
+This repo builds on the original CBL (McCauley and Christiansen in [*Psych Review*, 2019](http://dx.doi.org/10.1037/rev0000126)) and additionally implements the frame detection logic from their [2019 CogSci paper](https://escholarship.org/uc/item/644529zb).
 
 In order to run the CBL model on an input corpus, the corpus must be appropriately cleaned/prepared. 
 
