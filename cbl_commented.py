@@ -279,35 +279,37 @@ class CBL_Model:
 
 rootdir='//home/directory/to/corpora'
 
-for subdir, dirs, files in os.walk(rootdir):
-    for file in files:
-        if ('.capp' in file):
-            textfile = subdir+'/'+file
-            file = open(textfile,'r')
-            lines = file.readlines()
-            file.close()
+if __name__ == "__main__":
 
-            production_scores = []
-            
-            for i in range(0,10):#define number of iterations (for averaging)
+    for subdir, dirs, files in os.walk(rootdir):
+        for file in files:
+            if ('.capp' in file):
+                textfile = subdir+'/'+file
+                file = open(textfile,'r')
+                lines = file.readlines()
+                file.close()
+    
+                production_scores = []
                 
-                model = CBL_Model()
-
-                for line in lines:
-                    #Ensure age-markers aren't treated as utterances
-                    #Ex. "*AGEIS: 25 .\n" <-- child at 25 months
-                    if '*AGEIS:' in line:
-                        continue
-                    #Process the utterance incrementally and on-line
-                    model.process(line)
-
-                production_scores.append(float(model.spa)/float(model.prod_attempts))
+                for i in range(0,10):#define number of iterations (for averaging)
                     
-            #Print out the model's average score on the production task
-            print(textfile, str(sum(production_scores) / float(len(production_scores))))
-
-            #output record of the on-line shallow parses to a new file for scoring
-            #against gold-standard shallow parses
-            outputfile = open(textfile.split('.capp')[0]+'.sh.parses','w')
-            for item in model.shallow_parses:
-                outputfile.write(' '.join(item)+'\n')
+                    model = CBL_Model()
+    
+                    for line in lines:
+                        #Ensure age-markers aren't treated as utterances
+                        #Ex. "*AGEIS: 25 .\n" <-- child at 25 months
+                        if '*AGEIS:' in line:
+                            continue
+                        #Process the utterance incrementally and on-line
+                        model.process(line)
+    
+                    production_scores.append(float(model.spa)/float(model.prod_attempts))
+                        
+                #Print out the model's average score on the production task
+                print(textfile, str(sum(production_scores) / float(len(production_scores))))
+    
+                #output record of the on-line shallow parses to a new file for scoring
+                #against gold-standard shallow parses
+                outputfile = open(textfile.split('.capp')[0]+'.sh.parses','w')
+                for item in model.shallow_parses:
+                    outputfile.write(' '.join(item)+'\n')
