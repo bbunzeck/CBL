@@ -35,7 +35,18 @@ class MeanDict(dict):
 class CBL_Model:
     """Chunk-based Learner (CBL) model. McCauley &
     Christiansen (2011, 2014, 2019)"""
-    def __init__(self, mode = "BTP"):
+    MODES = ("BTP", "PMI", "NPMI")
+
+    def __init__(self, mode = "NPMI", min_fillers = 5):
+        """mode: word-level association measure used for chunking
+                 ("BTP", "PMI" or "NPMI"). Note: avg_tp / TPRunAvg / tp
+                 contain scores of whichever measure is selected, I did not bother renaming them.
+        min_fillers: number of distinct slot fillers needed before a
+                 masked chunk becomes a frame (5 used by McCauley &
+                 Christiansen in accordance with Cameron-Faulkner, Lieven and Tomasello 2003, probably should use a lower value for small toy data)."""
+        if mode not in self.MODES: # check if mode correct
+            raise ValueError(f"mode must be one of {self.MODES}, got {mode!r}")
+        self.min_fillers = min_fillers
         self.avg_tp = 0
         self.Unigrams = {}
         self.Bigrams = {}
@@ -84,46 +95,50 @@ class CBL_Model:
         else:
             self.BiChunks[chunk1, chunk2] = 1
 
-    def add_slotchunks_frames(self, chunk):
-        """For every (at least bigram) chunk,
-        variants with every word replaced by the slot marker "_"
-        are saved to the SlotChunks dict and their fillers
-        are saved and used as a counter of frame fillers"""
-        if len(chunk.split()) > 1: # can also be changed if you just want larger frames
-            # for all words
-            for i in range(len(chunk.split())):
-                ChunkWords = chunk.split()
-                MaskedWord = ChunkWords[i] 
-                ChunkWords[i] = '_'
-                ChunkWithSlot = ' '.join(ChunkWords) # masked variant created
-                if ChunkWithSlot in self.SlotChunks: # if it already exists
-                    self.SlotChunks[ChunkWithSlot].add(MaskedWord) # add the masked word to set of possible fillers
-                 
-                else: # if not
-                    self.SlotChunks[ChunkWithSlot] = set([MaskedWord]) # create new set (with only masked word as first element)
+    def add_slot_filler(self, chunk_with_slot, filler):
+        """Updated `filler` as a filler of the _-masked chunk `chunk_with_slot`.
+        Once the masked chunk has at least min_fillers distinct fillers,
+        it becomes a frame: it is created with count 1, and every later
+        matching chunk again adds another 1 to its count."""
+        if chunk_with_slot in self.SlotChunks:
+            self.SlotChunks[chunk_with_slot].add(filler)
+        else:
+            self.SlotChunks[chunk_with_slot] = set([filler])
 
-                    # if it has at least n distinct elements
-                n = 2
-                if len(self.SlotChunks[ChunkWithSlot]) > n: # add it to frame list
-                    if ChunkWithSlot in self.Frames: # and record the frequency
-                        self.Frames[ChunkWithSlot] = self.Frames[ChunkWithSlot] + 1
-                    else:
-                        self.Frames[ChunkWithSlot] = 1
-        
-        for existing_chunk in self.UniChunks:
-            if len(existing_chunk.split()) > 1:
-                if len(existing_chunk.split()) < len(chunk.split()):
-                    if existing_chunk in chunk:
-                        ChunkWithSlot = chunk.replace(existing_chunk, '_')
-                        if ChunkWithSlot in self.SlotChunks: # if it already exists
-                            self.SlotChunks[ChunkWithSlot].add(existing_chunk) # add the masked word to set of possible fillers
-                        else: # if not
-                            self.SlotChunks[ChunkWithSlot] = set([existing_chunk]) # create new set (with only masked word as first element)
-                        if len(self.SlotChunks[ChunkWithSlot]) > n: # add it to frame list
-                                if ChunkWithSlot in self.Frames: # and record the frequency
-                                    self.Frames[ChunkWithSlot] = self.Frames[ChunkWithSlot] + 1
-                                else:
-                                    self.Frames[ChunkWithSlot] = 1
+        if len(self.SlotChunks[chunk_with_slot]) >= self.min_fillers:
+            if chunk_with_slot in self.Frames:
+                self.Frames[chunk_with_slot] += 1
+            else:
+                self.Frames[chunk_with_slot] = 1
+
+    def add_slotchunks_frames(self, chunk):
+        """For every multiword chunk, creates all variants with exactly one
+        slot "_" and puts the slot filler in a dict:
+        1) word slots: each single word is replaced by "_"
+           ("in the bag" -> "in the _", the filler is "bag")
+        2) chunk slots: each consecutive sub-span of 2+ words (but shorter
+           than the chunk), which is already an existing chunk in UniChunks, is
+           replaced by "_" ("in the bag" -> "in _", filler "the bag").
+           A filler only counts if it was already stored as a chunk.
+        Spans are compared word by word and each occurrence yields its own one-slot variant.
+        (TODO maybe dissociate word fillers and chunk fillers?)"""
+        words = chunk.split()
+        L = len(words)
+        if L < 2:
+            return
+
+        # 1) word slots
+        for i in range(L):
+            masked = words[:i] + ['_'] + words[i+1:]
+            self.add_slot_filler(' '.join(masked), words[i])
+
+        # 2) chunk slots: all sub-spans of length 2 .. L-1
+        for span_len in range(2, L):
+            for start in range(L - span_len + 1):
+                span = ' '.join(words[start:start+span_len])
+                if span in self.UniChunks:
+                    masked = words[:start] + ['_'] + words[start+span_len:]
+                    self.add_slot_filler(' '.join(masked), span)
                     
     def add_chunkWordPair(self, w1, w2):
         """Updates frequency info for adjacent words occurring as part
@@ -305,6 +320,7 @@ class CBL_Model:
 
 
 rootdir='//home/directory/to/corpora'
+MODE = "NPMI"
 
 if __name__ == "__main__":
 
@@ -312,15 +328,14 @@ if __name__ == "__main__":
         for file in files:
             if ('.capp' in file):
                 textfile = subdir+'/'+file
-                file = open(textfile,'r')
-                lines = file.readlines()
-                file.close()
-    
+                with open(textfile,'r') as f:
+                    lines = f.readlines()
+
                 production_scores = []
-                
+
                 for i in range(0,10):#define number of iterations (for averaging)
-                    
-                    model = CBL_Model(mode = "BTP")
+
+                    model = CBL_Model(mode = MODE)
     
                     for line in lines:
                         #Ensure age-markers aren't treated as utterances
@@ -337,6 +352,7 @@ if __name__ == "__main__":
     
                 #output record of the on-line shallow parses to a new file for scoring
                 #against gold-standard shallow parses
-                outputfile = open(textfile.split('.capp')[0]+'.sh.parses','w')
-                for item in model.shallow_parses:
-                    outputfile.write(' '.join(item)+'\n')
+                #(mode in the filename, so runs with different measures don't overwrite each other)
+                with open(textfile.split('.capp')[0]+'.'+MODE+'.sh.parses','w') as outputfile:
+                    for item in model.shallow_parses:
+                        outputfile.write(' '.join(item)+'\n')
