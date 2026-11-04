@@ -122,6 +122,12 @@ class CBL_Model:
         """Calculates PMI between words instead of backwards transition probabilities"""
         return float(math.log2((self.Bigrams[w1+' '+w2]*self.tokens_seen)/(self.Unigrams[w1]*self.Unigrams[w2])))
 
+    def calc_npmi(self, w1, w2):
+        """Calculates PMI between words instead of backwards transition probabilities"""
+        PMI = self.calc_pmi(w1, w2)
+        NPMI = PMI / -math.log2((self.Bigrams[w1+' '+w2]/self.tokens_seen))
+        return NPMI
+
     def update_chunks(self, linelist):
         """Update the chunkatory on-line."""
         line = ' '.join(linelist)
@@ -256,6 +262,8 @@ class CBL_Model:
                 tp = self.calc_btp(prev_word, item)
             elif self.mode == "PMI":
                 tp = self.calc_pmi(prev_word, item)
+            elif self.mode == "NPMI":
+                tp = self.calc_npmi(prev_word, item)
             self.upd_run_avg(tp, prev_word, item)
 
             #shallow parse the utterance
@@ -293,7 +301,7 @@ if __name__ == "__main__":
                 
                 for i in range(0,10):#define number of iterations (for averaging)
                     
-                    model = CBL_Model()
+                    model = CBL_Model(mode = "BTP")
     
                     for line in lines:
                         #Ensure age-markers aren't treated as utterances
