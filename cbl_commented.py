@@ -34,7 +34,7 @@ class MeanDict(dict):
 class CBL_Model:
     """Chunk-based Learner (CBL) model. McCauley &
     Christiansen (2011, 2014, 2019)"""
-    def __init__(self):
+    def __init__(self, mode = "BTP"):
         self.avg_tp = 0
         self.Unigrams = {}
         self.Bigrams = {}
@@ -48,6 +48,9 @@ class CBL_Model:
         # additional dicts for frame detection
         self.SlotChunks = {}
         self.Frames = {}
+        self.tokens_seen = 0
+        self.mode = mode
+        
 
     def add_unigram(self, word):
         """Updates low-level frequency info for unigrams."""
@@ -55,6 +58,7 @@ class CBL_Model:
             self.Unigrams[word] += 1
         else:
             self.Unigrams[word] = 1
+        self.tokens_seen += 1
 
     def add_bigram(self, w1, w2):
         """Updates low-level frequency info for bigrams."""
@@ -113,6 +117,10 @@ class CBL_Model:
         """Calculates transition probabilities between words."""
         return float(self.Bigrams[w1+' '+w2])/float(self.Unigrams[w2])
 
+    def calc_pmi(self, w1, w2):
+        """Calculates PMI between words instead of backwards transition probabilities"""
+        return float((self.Bigrams[w1+' '+w2]*self.tokens_seen)/(self.Unigrams[w1]*self.Unigrams[w2]))
+
     def update_chunks(self, linelist):
         """Update the chunkatory on-line."""
         line = ' '.join(linelist)
@@ -126,6 +134,13 @@ class CBL_Model:
         
     
     def calc_btp_chunks(self, chunk1, chunk2):
+        """Calculates the TP between two chunks."""
+        if (chunk1, chunk2) in self.BiChunks:
+            return float(self.BiChunks[(chunk1, chunk2)])/float(self.UniChunks[chunk2])
+        else:
+            return 0.0
+
+    def calc_pmi_chunks(self, chunk1, chunk2):
         """Calculates the TP between two chunks."""
         if (chunk1, chunk2) in self.BiChunks:
             return float(self.BiChunks[(chunk1, chunk2)])/float(self.UniChunks[chunk2])
@@ -197,7 +212,10 @@ class CBL_Model:
             highest = 0.0
             candidates = []
             for item in bag:
-                tp = self.calc_btp_chunks(prev_chunk, item)
+                if self.mode == "BTP":
+                    tp = self.calc_btp_chunks(prev_chunk, item)
+                else:
+                    tp = self.calc__chunks(prev_chunk, item)
                 if tp > highest:
                     candidates = [item]
                     highest = tp
