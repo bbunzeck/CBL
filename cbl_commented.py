@@ -4,6 +4,7 @@
 
 import random
 import os
+import math
 
 class MeanDict(dict):
     """Dictionary designed to allow easy calculation
@@ -119,7 +120,7 @@ class CBL_Model:
 
     def calc_pmi(self, w1, w2):
         """Calculates PMI between words instead of backwards transition probabilities"""
-        return float((self.Bigrams[w1+' '+w2]*self.tokens_seen)/(self.Unigrams[w1]*self.Unigrams[w2]))
+        return float(math.log2((self.Bigrams[w1+' '+w2]*self.tokens_seen)/(self.Unigrams[w1]*self.Unigrams[w2])))
 
     def update_chunks(self, linelist):
         """Update the chunkatory on-line."""
@@ -134,13 +135,6 @@ class CBL_Model:
         
     
     def calc_btp_chunks(self, chunk1, chunk2):
-        """Calculates the TP between two chunks."""
-        if (chunk1, chunk2) in self.BiChunks:
-            return float(self.BiChunks[(chunk1, chunk2)])/float(self.UniChunks[chunk2])
-        else:
-            return 0.0
-
-    def calc_pmi_chunks(self, chunk1, chunk2):
         """Calculates the TP between two chunks."""
         if (chunk1, chunk2) in self.BiChunks:
             return float(self.BiChunks[(chunk1, chunk2)])/float(self.UniChunks[chunk2])
@@ -212,10 +206,7 @@ class CBL_Model:
             highest = 0.0
             candidates = []
             for item in bag:
-                if self.mode == "BTP":
-                    tp = self.calc_btp_chunks(prev_chunk, item)
-                else:
-                    tp = self.calc__chunks(prev_chunk, item)
+                tp = self.calc_btp_chunks(prev_chunk, item)
                 if tp > highest:
                     candidates = [item]
                     highest = tp
@@ -260,8 +251,11 @@ class CBL_Model:
             self.add_unigram(item)
             self.add_bigram(prev_word, item)
 
-            #calculate running average TP
-            tp = self.calc_btp(prev_word, item)
+            #calculate running average TP/PPI
+            if self.mode == "BTP":
+                tp = self.calc_btp(prev_word, item)
+            elif self.mode == "PMI":
+                tp = self.calc_pmi(prev_word, item)
             self.upd_run_avg(tp, prev_word, item)
 
             #shallow parse the utterance
