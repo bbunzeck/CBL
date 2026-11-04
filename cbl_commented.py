@@ -90,22 +90,40 @@ class CBL_Model:
         are saved to the SlotChunks dict and their fillers
         are saved and used as a counter of frame fillers"""
         if len(chunk.split()) > 1: # can also be changed if you just want larger frames
+            # for all words
             for i in range(len(chunk.split())):
                 ChunkWords = chunk.split()
                 MaskedWord = ChunkWords[i] 
                 ChunkWords[i] = '_'
-                ChunkWithSlot = ' '.join(ChunkWords)
-                if ChunkWithSlot in self.SlotChunks:
-                    self.SlotChunks[ChunkWithSlot].add(MaskedWord)
+                ChunkWithSlot = ' '.join(ChunkWords) # masked variant created
+                if ChunkWithSlot in self.SlotChunks: # if it already exists
+                    self.SlotChunks[ChunkWithSlot].add(MaskedWord) # add the masked word to set of possible fillers
                  
-                else:
-                    self.SlotChunks[ChunkWithSlot] = set([MaskedWord])
+                else: # if not
+                    self.SlotChunks[ChunkWithSlot] = set([MaskedWord]) # create new set (with only masked word as first element)
 
-                if len(self.SlotChunks[ChunkWithSlot]) > 2:
-                    if ChunkWithSlot in self.Frames:
+                    # if it has at least n distinct elements
+                n = 2
+                if len(self.SlotChunks[ChunkWithSlot]) > n: # add it to frame list
+                    if ChunkWithSlot in self.Frames: # and record the frequency
                         self.Frames[ChunkWithSlot] = self.Frames[ChunkWithSlot] + 1
                     else:
-                        self.Frames[ChunkWithSlot] = 1    
+                        self.Frames[ChunkWithSlot] = 1
+        
+        for existing_chunk in self.UniChunks:
+            if len(existing_chunk.split()) > 1:
+                if len(existing_chunk.split()) < len(chunk.split()):
+                    if existing_chunk in chunk:
+                        ChunkWithSlot = chunk.replace(existing_chunk, '_')
+                        if ChunkWithSlot in self.SlotChunks: # if it already exists
+                            self.SlotChunks[ChunkWithSlot].add(existing_chunk) # add the masked word to set of possible fillers
+                        else: # if not
+                            self.SlotChunks[ChunkWithSlot] = set([existing_chunk]) # create new set (with only masked word as first element)
+                        if len(self.SlotChunks[ChunkWithSlot]) > n: # add it to frame list
+                                if ChunkWithSlot in self.Frames: # and record the frequency
+                                    self.Frames[ChunkWithSlot] = self.Frames[ChunkWithSlot] + 1
+                                else:
+                                    self.Frames[ChunkWithSlot] = 1
                     
     def add_chunkWordPair(self, w1, w2):
         """Updates frequency info for adjacent words occurring as part
