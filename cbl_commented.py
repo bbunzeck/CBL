@@ -37,16 +37,16 @@ class CBL_Model:
     Christiansen (2011, 2014, 2019)"""
     MODES = ("BTP", "PMI", "NPMI")
 
-    def __init__(self, mode = "NPMI", min_fillers = 5):
+    def __init__(self, mode = "NPMI", min_filler_num = 5):
         """mode: word-level association measure used for chunking
                  ("BTP", "PMI" or "NPMI"). Note: avg_tp / TPRunAvg / tp
                  contain scores of whichever measure is selected, I did not bother renaming them.
-        min_fillers: number of distinct slot fillers needed before a
+        min_filler_num: number of distinct slot fillers needed before a
                  masked chunk becomes a frame (5 used by McCauley &
                  Christiansen in accordance with Cameron-Faulkner, Lieven and Tomasello 2003, probably should use a lower value for small toy data)."""
         if mode not in self.MODES: # check if mode correct
             raise ValueError(f"mode must be one of {self.MODES}, got {mode!r}")
-        self.min_fillers = min_fillers
+        self.min_filler_num = min_filler_num
         self.avg_tp = 0
         self.Unigrams = {}
         self.Bigrams = {}
@@ -97,7 +97,7 @@ class CBL_Model:
 
     def add_slot_filler(self, chunk_with_slot, filler):
         """Updated `filler` as a filler of the _-masked chunk `chunk_with_slot`.
-        Once the masked chunk has at least min_fillers distinct fillers,
+        Once the masked chunk has at least min_filler_num distinct fillers,
         it becomes a frame: it is created with count 1, and every later
         matching chunk again adds another 1 to its count."""
         if chunk_with_slot in self.SlotChunks:
@@ -105,7 +105,7 @@ class CBL_Model:
         else:
             self.SlotChunks[chunk_with_slot] = set([filler])
 
-        if len(self.SlotChunks[chunk_with_slot]) >= self.min_fillers:
+        if len(self.SlotChunks[chunk_with_slot]) >= self.min_filler_num:
             if chunk_with_slot in self.Frames:
                 self.Frames[chunk_with_slot] += 1
             else:
