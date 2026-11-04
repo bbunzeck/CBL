@@ -1,11 +1,15 @@
 # Updated CBL
-This repo builds on the original CBL (McCauley and Christiansen in [*Psych Review*, 2019](http://dx.doi.org/10.1037/rev0000126)) and additionally implements the frame detection logic from their [2019 *CogSci* paper](https://escholarship.org/uc/item/644529zb).
+This repo builds on the original CBL (McCauley and Christiansen in [*Psych Review*, 2019](http://dx.doi.org/10.1037/rev0000126)) and additionally:
+- implements the frame detection logic from their [2019 *CogSci* paper](https://escholarship.org/uc/item/644529zb)
+- allows to switch the detection of chunk boundaries from backwards transitional probabilities to PMI or normalized PMI
+- expands the frame detection logic to also accommodate chunks as slot elements in frames (currently WIP!)
 
+## How to use it
 In order to run the CBL model on an input corpus, the corpus must be appropriately cleaned/prepared. 
 
-The folder "Sample Corpora" includes detailed instructions for corpus preparation, along with a sample corpus ("anne_excerpt.capp"). 
+The folder "Sample Corpora" includes detailed instructions for corpus preparation, along with a sample corpus ("anne_excerpt.capp") and a toy corpus ("toy_data.capp"). 
 
-The same folder includes instructions for creating the "gold standard" shallow parse used to evaluate the model's shallow parsing performance, 
+The same folder also includes instructions for creating the "gold standard" shallow parse used to evaluate the model's shallow parsing performance, 
 along with an example of a gold standard file. 
 
 ## References

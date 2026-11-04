@@ -49,6 +49,7 @@ class CBL_Model:
         # additional dicts for frame detection
         self.SlotChunks = {}
         self.Frames = {}
+        # additional stuff for PMI and NPMI calculation
         self.tokens_seen = 0
         self.mode = mode
         
